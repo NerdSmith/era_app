@@ -1,6 +1,6 @@
-from django.contrib import admin
 from django.urls import path, include
-from api.views import Hello, ListUsers
+
+from api.views import PhotoSeriesView, TagView, TagListView, PhotoSeriesMainPageView, NotificationView, CollectionView
 
 auth_urls = [
     path('auth/', include('djoser.urls')),
@@ -9,7 +9,15 @@ auth_urls = [
 
 
 urlpatterns = [
-    path('', Hello.as_view(), name='hello-view'),
     path('', include(auth_urls)),
-    # path('a/', ListUsers.as_view())
+
+    path('categories/', TagListView.as_view()),
+    path('categories/<int:pk>', TagView.as_view()),
+
+    path('post/<int:pk>', PhotoSeriesView.as_view()),
+    path('photostock/', PhotoSeriesMainPageView.as_view()),
+
+    path('collection/<int:pk>', CollectionView.as_view()),
+
+    path('notification/', NotificationView.as_view())
 ]

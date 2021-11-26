@@ -72,7 +72,7 @@ class PhotoSeriesTagsInLine(admin.TabularInline):
 
 class TagAdmin(admin.ModelAdmin):
     inlines = (PhotoSeriesTagsInLine, )
-
+    show_change_link = True
 
 admin.site.register(Tag, TagAdmin)
 

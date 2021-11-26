@@ -21,6 +21,7 @@ class SinglePhoto(models.Model):
     photo = models.ImageField(null=False, blank=False, upload_to='pictures/photos')
     owner = models.ForeignKey("User", on_delete=models.CASCADE, related_name='user_photos', blank=False, null=False)
     series = models.ForeignKey("PhotoSeries", on_delete=models.CASCADE, related_name='series_photos', blank=False, null=False)
+    order = models.IntegerField(null=False, blank=False, default=0)
 
     def __str__(self):
         return self.photo.name
@@ -34,8 +35,9 @@ class PhotoSeries(models.Model):
     tag = models.ManyToManyField(Tag, blank=True, symmetrical=False, related_name='photo_series')
     description = models.TextField(max_length=150, blank=True, null=False)
     owner = models.ForeignKey("User", on_delete=models.CASCADE, related_name='user_series')
-    collection = models.ForeignKey("Collection", on_delete=models.CASCADE, related_name='collection_series', blank=True, null=True)
+    collection = models.ForeignKey("Collection", on_delete=models.SET_NULL, related_name='collection_series', blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
+    price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, null=True, blank=True)
 
     def __str__(self):
         return self.name

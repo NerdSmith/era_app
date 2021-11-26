@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     # 'social_django',
+    'django_cleanup.apps.CleanupConfig',
     'rest_framework_simplejwt',
     'drf_yasg',
 
