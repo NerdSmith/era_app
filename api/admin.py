@@ -80,7 +80,14 @@ admin.site.register(Tag, TagAdmin)
 class PhotoSeriesAdmin(admin.ModelAdmin):
     inlines = (SinglePhotoInLine, )
     readonly_fields = ("is_secret", )
-    filter_horizontal = ('tag', )
+    filter_horizontal = ('tag', 'collection')
+
+
+class PhotoSeriesCollectionInLine(admin.TabularInline):
+    model = PhotoSeries.collection.through
+    classes = ['collapse', ]
+    extra = 1
+    show_change_link = True
 
 
 class PhotoSeriesInLine(admin.TabularInline):
@@ -91,7 +98,7 @@ class PhotoSeriesInLine(admin.TabularInline):
 
 
 class CollectionAdmin(admin.ModelAdmin):
-    inlines = (PhotoSeriesInLine, )
+    inlines = (PhotoSeriesCollectionInLine,)
     fields = ('name', 'cover', 'cover_img', 'description', 'is_secret', 'owner', 'created_at')
     readonly_fields = ("cover_img", )
 
@@ -117,7 +124,7 @@ admin.site.register(Collection, CollectionAdmin)
 
 
 class UserAdmin(admin.ModelAdmin):
-    inlines = (PhotoSeriesInLine, CollectionInLine)
+    inlines = (PhotoSeriesInLine, CollectionInLine, )
     fieldsets = (
         (None, {
             'fields': ('username', 'first_name', 'last_name', 'email')

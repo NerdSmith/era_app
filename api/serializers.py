@@ -87,8 +87,38 @@ class PhotoSeriesShortSerializer(serializers.ModelSerializer):
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-    collection_series = PhotoSeriesGetSerializer(many=True)
+    # collection_series = PhotoSeriesGetSerializer(many=True)
 
     class Meta:
         model = Collection
-        fields = ['id', 'name', 'cover', 'description', 'owner', 'is_secret', 'created_at', 'collection_series']
+        fields = ['id', 'name', 'cover', 'description', 'owner', 'is_secret', 'created_at', 'collections_series']
+
+
+class PhotoSeriesSerializer(serializers.ModelSerializer):
+    # series_photo = serializers.ListSerializer(child=serializers.ImageField())
+    # tag = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # tag = serializers.ListField(child=serializers.CharField())
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+        series_photo = request.data.getlist("series_photos")
+
+        photo_series = PhotoSeries.objects.create(
+            name=validated_data.get('name'),
+            description=validated_data.get('description'),
+            owner=request.user,
+            price=validated_data.get('price'),
+        )
+
+        for tag_pk in validated_data.get('tag'):
+            photo_series.tag.add(tag_pk)
+
+        for i in range(len(series_photo)):
+            SinglePhoto.objects.create(series=photo_series, order=i, photo=series_photo[i], owner=request.user)
+
+        return photo_series
+
+
+    class Meta:
+        model = PhotoSeries
+        fields = ['id', 'name', 'tag', 'description', 'price']

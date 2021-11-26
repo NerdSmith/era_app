@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 # Application definition
 
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     # 3rd party lib
     'rest_framework',
     'djoser',
+    'corsheaders',
     # 'social_django',
     'django_cleanup.apps.CleanupConfig',
     'rest_framework_simplejwt',
@@ -53,6 +56,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -105,12 +109,18 @@ DATABASES = {
 # }
 
 # email validation
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# EMAIL_HOST =
-# EMAIL_PORT =
-# EMAIL_HOST_USER = '[YOUR EMAIL THAT WILL SEND]'
-# EMAIL_HOST_PASSWORD = '[YOUR EMAIL APP PASSWORD]'
-# EMAIL_USE_TLS =
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = '465'
+EMAIL_HOST_USER = 'era@interplar.com'
+EMAIL_HOST_PASSWORD = 'yewmpbywsqtirlht'
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+SERVER_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 
 # Password validation

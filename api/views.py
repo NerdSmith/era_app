@@ -1,6 +1,6 @@
 from random import sample, shuffle, choice, randint
 
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
@@ -12,9 +12,19 @@ from rest_framework.views import APIView
 
 from .models import Tag, PhotoSeries, Collection
 from .permissions import IsOwnerOrStuff, IsNotSecret
-from .serializers import PhotoSeriesGetSerializer, TagSerializer, PhotoSeriesShortSerializer, CollectionSerializer
+from .serializers import PhotoSeriesGetSerializer, TagSerializer, PhotoSeriesShortSerializer, CollectionSerializer, \
+    PhotoSeriesSerializer
 
 User = get_user_model()
+
+
+class Hello(APIView):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse('Hello, World!')
+
+    def post(self, request, format=None):
+        print(request.data)
+        return JsonResponse(request.data)
 
 
 # Media view tunnel
@@ -32,6 +42,17 @@ class MediaAccess(APIView):
 # def F(request):
 #     pass
 
+
+class PhotoSeriesCreateView(APIView):
+    def post(self, request, format=None):
+        serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 # PhotoSeries views
 class PhotoSeriesView(APIView):
     permission_classes = [IsOwnerOrStuff | IsNotSecret]
@@ -46,8 +67,11 @@ class PhotoSeriesView(APIView):
     #     return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, pk, format=None):
-        photo_series = PhotoSeries.objects.get(pk=pk)
-        serializer = PhotoSeriesGetSerializer(photo_series)
+        try:
+            photo_series = PhotoSeries.objects.get(pk=pk)
+            serializer = PhotoSeriesGetSerializer(photo_series)
+        except Exception as e:
+            raise Http404
         if not request.query_params:
             return Response(serializer.data) # single post
         else:
@@ -74,6 +98,17 @@ class PhotoSeriesView(APIView):
             result_page = paginator.paginate_queryset(random_items, request)
             serializer = PhotoSeriesShortSerializer(result_page, many=True)
             return Response(serializer.data) # recommendations for post
+
+    def delete(self, request, pk, format=None):
+        try:
+            series = PhotoSeries.objects.get(pk=pk)
+        except Exception as e:
+            raise Http404
+        if request.user == series.owner or request.user.is_staff:
+            series.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class PhotoSeriesMainPageView(APIView):

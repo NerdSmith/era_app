@@ -35,7 +35,8 @@ class PhotoSeries(models.Model):
     tag = models.ManyToManyField(Tag, blank=True, symmetrical=False, related_name='photo_series')
     description = models.TextField(max_length=150, blank=True, null=False)
     owner = models.ForeignKey("User", on_delete=models.CASCADE, related_name='user_series')
-    collection = models.ForeignKey("Collection", on_delete=models.SET_NULL, related_name='collection_series', blank=True, null=True)
+    collection = models.ManyToManyField("Collection", blank=True, symmetrical=False, related_name='collections_series')
+    # collection = models.ForeignKey("Collection", on_delete=models.SET_NULL, related_name='collection_series', blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0, null=True, blank=True)
 
@@ -44,7 +45,11 @@ class PhotoSeries(models.Model):
 
     def is_secret(self):
         if self.collection:
-            return self.collection.is_secret
+            is_secret = False
+            for collection in self.collection.all():
+                is_secret = is_secret or collection.is_secret
+
+            return is_secret
         else:
             return False
 
