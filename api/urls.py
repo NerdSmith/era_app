@@ -1,6 +1,8 @@
 from django.urls import path, include
 
-from api.views import PhotoSeriesView, TagView, TagListView, PhotoSeriesMainPageView, NotificationView, CollectionView, Hello, PhotoSeriesCreateView
+from api.views import PhotoSeriesView, TagView, TagListView, PhotoSeriesMainPageView, NotificationView, CollectionView, \
+    Hello, PhotoSeriesCreateView, CollectionCreateView, UserPhotoSeries, UserCollections, UserSubscribeView, \
+    UserSubscribersView
 
 auth_urls = [
     path('auth/', include('djoser.urls')),
@@ -19,6 +21,12 @@ urlpatterns = [
     path('photostock/', PhotoSeriesMainPageView.as_view()),
 
     path('collection/<int:pk>', CollectionView.as_view()),
+    path('collection/', CollectionCreateView.as_view()),
+
+    path('userposts/<int:user_pk>', UserPhotoSeries.as_view()),
+    path('usercollections/<int:user_pk>', UserCollections.as_view()),
+    path('user/subscribe/<int:user_pk>', UserSubscribeView.as_view()),
+    path('user/subscribers/<int:user_pk>', UserSubscribersView.as_view()),
 
     path('notification/', NotificationView.as_view()),
     path('', Hello.as_view())

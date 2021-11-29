@@ -28,6 +28,7 @@ class IsNotSecret(BasePermission): # add req obj secret assertion
 
         collection_obj = Collection.objects.filter(cover=url).first()
         if collection_obj:
+            print(collection_obj.owner, request.user)
             return collection_obj.owner == request.user or not collection_obj.is_secret
 
         return True

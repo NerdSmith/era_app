@@ -18,6 +18,11 @@ class UserCreateSerializer(UserCreateSerializer):
             'profile_pic',
             'first_name',
             'last_name',
+            'description',
+            'location',
+            'instagram_url',
+            'vk_url',
+            'sex',
         )
 
 
@@ -39,7 +44,7 @@ class SinglePhotoShortSerializer(serializers.ModelSerializer):
         fields = ['photo', ]
 
 
-class PhotoSeriesGetSerializer(serializers.ModelSerializer):
+class PhotoSeriesRetrieveSerializer(serializers.ModelSerializer):
     series_photos = SinglePhotoSerializer(many=True)
     # series_photos = serializers.ImageField(many=True)
     # series_photos = SerializerMethodField('_series_photos')
@@ -86,12 +91,25 @@ class PhotoSeriesShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'series_photos']
 
 
-class CollectionSerializer(serializers.ModelSerializer):
+class CollectionRetrieveSerializer(serializers.ModelSerializer):
     # collection_series = PhotoSeriesGetSerializer(many=True)
 
     class Meta:
         model = Collection
         fields = ['id', 'name', 'cover', 'description', 'owner', 'is_secret', 'created_at', 'collections_series']
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    # collection_series = PhotoSeriesGetSerializer(many=True)
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+        new_collection = Collection.objects.create(**validated_data, owner=request.user)
+        return new_collection
+
+    class Meta:
+        model = Collection
+        fields = ['id', 'name', 'cover', 'description', 'is_secret']
 
 
 class PhotoSeriesSerializer(serializers.ModelSerializer):
