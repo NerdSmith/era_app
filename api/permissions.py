@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 from django.shortcuts import get_object_or_404
 
 from .models import SinglePhoto, PhotoSeries, Collection
@@ -35,3 +35,11 @@ class IsNotSecret(BasePermission): # add req obj secret assertion
 
     def has_object_permission(self, request, view, obj):
         return obj.is_secret
+
+
+class CurrentUserOrAdminOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if type(obj) == type(user) and obj == user:
+            return True
+        return request.method in SAFE_METHODS or user.is_staff

@@ -4,6 +4,7 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from rest_framework.response import Response
@@ -104,13 +105,18 @@ class PhotoSeriesView(APIView):
 
 
 class PhotoSeriesCreateView(APIView):
+    permission_classes = [IsAuthenticated, ]
+    parser_classes = (MultiPartParser, FormParser)
+
     def post(self, request, format=None):
+        print(request.data)
+        print(request.headers)
         serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhotoSeriesMainPageView(APIView):

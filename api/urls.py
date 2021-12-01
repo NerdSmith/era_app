@@ -18,6 +18,7 @@ urlpatterns = [
 
     path('post/<int:pk>', PhotoSeriesView.as_view()),
     path('post/', PhotoSeriesCreateView.as_view()),
+    #path('post/', view),
     path('photostock/', PhotoSeriesMainPageView.as_view()),
 
     path('collection/<int:pk>', CollectionView.as_view()),

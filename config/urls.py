@@ -37,8 +37,10 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+
 def render_react(request):
     return render(request, "index.html")
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),

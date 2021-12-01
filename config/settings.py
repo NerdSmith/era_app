@@ -74,8 +74,9 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            # os.path.join(BASE_DIR, "build"),
-            str(BASE_DIR.joinpath('build')),
+            os.path.join(BASE_DIR, "build"),
+            # os.path.join(BASE_DIR, 'templates'),
+            # str(BASE_DIR.joinpath('build')),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -150,7 +151,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'Europe/Moscow'
 
@@ -167,7 +168,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     str(BASE_DIR.joinpath('static')),
-    #str(BASE_DIR.joinpath('assets')),
+    # str(BASE_DIR.joinpath('build/assets')),
     str(BASE_DIR.joinpath('build/static')),
 
     # os.path.join(BASE_DIR, "build/static"),
@@ -201,9 +202,6 @@ REST_FRAMEWORK = {
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
-
-def getTrue(x):
-    return True
 
 
 SIMPLE_JWT = {
@@ -239,5 +237,9 @@ DJOSER = {
         'user': 'api.serializers.UserCreateSerializer',
         'current_user': 'api.serializers.UserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-    }
+    },
+    'PERMISSIONS': {
+        'user': ['api.permissions.CurrentUserOrAdminOrReadOnly', ],
+        # 'user_list': ['rest_framework.permissions.AllowAny'],
+    },
 }
