@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
+
 from django.contrib.auth.hashers import make_password
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.contrib import auth
@@ -9,6 +12,13 @@ from django.utils.translation import gettext_lazy as _
 from django.apps import apps
 
 from .validators import CustomUnicodeUsernameValidator
+from pytils.translit import slugify
+
+
+def transliterate_filename(filename):
+    name, ext = os.path.splitext(filename)
+    name = slugify(name)
+    return f'{name}{ext}'
 
 
 class Tag(models.Model):
@@ -19,7 +29,18 @@ class Tag(models.Model):
 
 
 class SinglePhoto(models.Model):
-    photo = models.ImageField(null=False, blank=False, upload_to='pictures/photos')
+    def get_image_path(self, filename):
+        path = f'pictures/photos/{transliterate_filename(filename)}'
+        return path
+
+    photo = models.ImageField(
+        null=False,
+        blank=False,
+        upload_to=get_image_path,
+        validators=[
+            FileExtensionValidator(['png', 'jpg', 'gif'])
+        ],
+    )
     owner = models.ForeignKey("User", on_delete=models.CASCADE, related_name='user_photos', blank=False, null=False)
     series = models.ForeignKey("PhotoSeries", on_delete=models.CASCADE, related_name='series_photos', blank=False, null=False)
     order = models.IntegerField(null=False, blank=False, default=0)
@@ -34,7 +55,7 @@ class SinglePhoto(models.Model):
 class PhotoSeries(models.Model):
     name = models.CharField(max_length=40, blank=False, null=False)
     tag = models.ManyToManyField(Tag, blank=True, symmetrical=False, related_name='photo_series')
-    description = models.TextField(max_length=150, blank=True, null=False)
+    description = models.TextField(max_length=300, blank=True, null=False)
     owner = models.ForeignKey("User", on_delete=models.CASCADE, related_name='user_series')
     collection = models.ManyToManyField("Collection", blank=True, symmetrical=False, related_name='collections_series')
     # collection = models.ForeignKey("Collection", on_delete=models.SET_NULL, related_name='collection_series', blank=True, null=True)
@@ -56,7 +77,19 @@ class PhotoSeries(models.Model):
 
 
 class Collection(models.Model):
-    cover = models.ImageField(null=False, blank=False, upload_to='pictures/covers')
+    def get_image_path(self, filename):
+        path = f'pictures/covers/{transliterate_filename(filename)}'
+        return path
+
+    cover = models.ImageField(
+        null=False,
+        blank=False,
+        upload_to=get_image_path,
+        validators=[
+            FileExtensionValidator(['png', 'jpg', 'gif'])
+        ],
+    )
+
     name = models.CharField(max_length=40, blank=False, null=False)
     description = models.TextField(max_length=150, blank=True, null=False)
     is_secret = models.BooleanField(default=False)
@@ -157,7 +190,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # profile features
     subscribers = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='subscribed_to')
-    profile_pic = models.ImageField(null=True, blank=True, upload_to='pictures/avatars')
+
+    def get_image_path(self, filename):
+        path = f'pictures/avatars/{transliterate_filename(filename)}'
+        return path
+
+    profile_pic = models.ImageField(
+        null=True,
+        blank=True,
+        upload_to=get_image_path,
+        validators=[
+            FileExtensionValidator(['png', 'jpg', 'gif'])
+        ],
+    )
     check_mark = models.BooleanField(_('check mark'), default=False, blank=False, null=False)
     description = models.TextField(max_length=150, blank=True, null=False)
     location = models.CharField(max_length=50, blank=True, null=False)

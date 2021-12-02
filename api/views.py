@@ -2,6 +2,8 @@ from random import sample, shuffle, choice, randint
 
 from django.http import HttpResponse, Http404, JsonResponse
 from django.contrib.auth import get_user_model
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -15,15 +17,34 @@ from .models import Tag, PhotoSeries, Collection
 from .permissions import IsOwnerOrStuff, IsNotSecret
 from .serializers import PhotoSeriesRetrieveSerializer, TagSerializer, PhotoSeriesShortSerializer, \
     CollectionRetrieveSerializer, \
-    PhotoSeriesSerializer, CollectionSerializer
+    PhotoSeriesSerializer, CollectionSerializer, UserShortSerializer
 
 User = get_user_model()
 
 
 class Hello(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает html Hello, World!",
+        operation_summary="Hello, World!",
+        tags=['api test']
+    )
     def get(self, request, *args, **kwargs):
         return HttpResponse('Hello, World!')
 
+    @swagger_auto_schema(
+        operation_description="Возвращает переданные параметры",
+        operation_summary="Переданные параметры",
+        request_body=openapi.Schema(
+            title='Params',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'param1': openapi.Schema(type=openapi.TYPE_STRING),
+                'param2': openapi.Schema(type=openapi.TYPE_STRING),
+                'param3': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        ),
+        tags=['api test']
+    )
     def post(self, request, format=None):
         print(request.data)
         return JsonResponse(request.data)
@@ -33,6 +54,11 @@ class Hello(APIView):
 class MediaAccess(APIView):
     permission_classes = [IsOwnerOrStuff | IsNotSecret]
 
+    @swagger_auto_schema(
+        operation_description="Возвращает фотографию по защищенному пути",
+        operation_summary="Ссылка на фото",
+        tags=['Media']
+    )
     def get(self, request, format=None, path=None):
         response = HttpResponse()
         print(path)
@@ -40,24 +66,49 @@ class MediaAccess(APIView):
         response['X-Accel-Redirect'] = '/protected/media/' + path
         return response
 
-# @
-# def F(request):
-#     pass
-
 
 # PhotoSeries views
 class PhotoSeriesView(APIView):
     permission_classes = [IsOwnerOrStuff | IsNotSecret]
 
-    # def post(self, request, format=None):
-    #     print(request.data)
-    #     serializer = PhotoSeriesGetSerializer(data=request.data, context={'request': request})
-    #     print('asdasd')
-    #     print(serializer.is_valid())
-    #     print(serializer.errors)
-    #     article_saved = serializer.save()
-    #     return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
-
+    @swagger_auto_schema(
+        operation_description="Возвращает серию фото по её id, если запрос без параметров запроса, с параметрами "
+                              "возвращает рекомендации по данному посту(берется 1 рандомный тег)",
+        operation_summary="Серия фото",
+        tags=['PhotoSeries'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id серии фото',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'limit',
+                description='Максимальное количество обэктов',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'offset',
+                description='Отступ с начала обэктов',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                'Серия фото',
+                schema=PhotoSeriesRetrieveSerializer
+            ),
+            207: openapi.Response(
+                'Рекомендации к фото',
+                schema=PhotoSeriesShortSerializer(many=True)
+            ),
+            404: 'Серия фото не найдена не найдена'
+        }
+    )
     def get(self, request, pk, format=None):
         try:
             photo_series = PhotoSeries.objects.get(pk=pk)
@@ -65,7 +116,7 @@ class PhotoSeriesView(APIView):
         except Exception as e:
             raise Http404
         if not request.query_params:
-            return Response(serializer.data) # single post
+            return Response(serializer.data, status=status.HTTP_200_OK) # single post
         else:
             related_tags = list(photo_series.tag.all())
             if related_tags:
@@ -87,11 +138,30 @@ class PhotoSeriesView(APIView):
             paginator.default_limit = 5
 
             random_items = sample(series, min(paginator.default_limit, len(series)))
-            print(random_items)
+
             result_page = paginator.paginate_queryset(random_items, request)
             serializer = PhotoSeriesShortSerializer(result_page, many=True)
-            return Response(serializer.data) # recommendations for post
+            return Response(serializer.data, status=status.HTTP_207_MULTI_STATUS) # recommendations for post
 
+    @swagger_auto_schema(
+        operation_description="Удаляет серию фото по её id",
+        operation_summary="Серия фото",
+        tags=['PhotoSeries'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id серии фото',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            )
+        ],
+        responses={
+            204: 'Серия фото удалена',
+            404: 'Серия фото не найдена',
+            403: 'Доступ запрещен'
+        }
+    )
     def delete(self, request, pk, format=None):
         try:
             series = PhotoSeries.objects.get(pk=pk)
@@ -106,11 +176,52 @@ class PhotoSeriesView(APIView):
 
 class PhotoSeriesCreateView(APIView):
     permission_classes = [IsAuthenticated, ]
-    parser_classes = (MultiPartParser, FormParser)
+    # parser_classes = (MultiPartParser, FormParser)
 
+    @swagger_auto_schema(
+        operation_description="Создание серии фото",
+        operation_summary="Серия фото",
+        tags=['PhotoSeries'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id серии фото',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+
+        ],
+        request_body=openapi.Schema(
+            'PhotoSeries',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'name': openapi.Schema(type=openapi.TYPE_STRING),
+                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                'tag': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        description='id тега',
+                        type=openapi.TYPE_INTEGER
+                    )
+                ),
+                'series_photos': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        description='файл фото',
+                        type=openapi.TYPE_FILE
+                    )
+                ),
+            }
+        ),
+        responses={
+            201: PhotoSeriesSerializer,
+            400: 'Плохой запрос'
+        }
+    )
     def post(self, request, format=None):
         print(request.data)
-        print(request.headers)
         serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
         if serializer.is_valid():
             serializer.save()
@@ -122,12 +233,44 @@ class PhotoSeriesCreateView(APIView):
 class PhotoSeriesMainPageView(APIView):
     # permission_classes = [IsNotSecret] # nn?
 
+    @swagger_auto_schema(
+        operation_description="Возвращает главную страницу/главную страницу по заданным тегам",
+        operation_summary="Главная страница",
+        tags=['Main Page'],
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                description='Номер страницы',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'tag_id',
+                description='Список тегов',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(
+                    type=openapi.TYPE_INTEGER
+                )
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                'Главная страница фото',
+                schema=PhotoSeriesShortSerializer(many=True)
+            ),
+            # 404: 'Серия фото не найдена'
+        }
+    )
     def get(self, request, format=None): # add params for tag?
         series = PhotoSeries.objects.filter(Q(collection__is_secret=False) | Q(collection__isnull=True))
         if request.query_params:
+            print(request.query_params)
             tags = request.query_params.getlist("tag_id")
-            for tag in tags:
-                series = series.filter(tag__id=int(tag))
+            if tags:
+                tags = tags[0].split(',')
+                for tag in tags:
+                    series = series.filter(tag__id=int(tag))
 
         series = list(series)
         paginator = PageNumberPagination()
@@ -145,11 +288,77 @@ class PhotoSeriesMainPageView(APIView):
 class CollectionView(APIView):
     permission_classes = [IsOwnerOrStuff | IsNotSecret] # add req obj secret assertion
 
+    @swagger_auto_schema(
+        operation_description="Возвращает коллекцию по её id",
+        operation_summary="Коллекция",
+        tags=['Collections'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id коллекции',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                'Коллекция',
+                schema=CollectionRetrieveSerializer
+                # openapi.Schema(
+                #     'Collection',
+                #     type=openapi.TYPE_OBJECT,
+                #     properties={
+                #         'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                #         'name': openapi.Schema(type=openapi.TYPE_STRING),
+                #         'cover': openapi.Schema(type=openapi.TYPE_STRING),
+                #         'description': openapi.Schema(type=openapi.TYPE_STRING),
+                #         'owner': openapi.Schema(type=openapi.TYPE_INTEGER, description='id хозяина'),
+                #         'is_secret': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                #         'created_at': openapi.Schema(
+                #             type=openapi.TYPE_STRING,
+                #             description='Время в формате типа 2021-11-27T21:33:50+03:00'
+                #         ),
+                #         'collections_series': openapi.Schema(
+                #             type=openapi.TYPE_ARRAY,
+                #             items=openapi.Schema(
+                #                 description='id серий фото',
+                #                 type=openapi.TYPE_INTEGER
+                #             )
+                #         ),
+                #     }
+                # )
+            ),
+            404: 'Коллекция не найдена'
+        }
+    )
     def get(self, request, pk, format=None):
-        collection = Collection.objects.get(pk=pk)
+        try:
+            collection = Collection.objects.get(pk=pk)
+        except Exception as e:
+            raise Http404
         serializer = CollectionRetrieveSerializer(collection)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Удаляет коллекцию по её id",
+        operation_summary="Коллекция",
+        tags=['Collections'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id коллекции',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            )
+        ],
+        responses={
+            204: 'Коллекция удалена',
+            404: 'Коллекция не найдена',
+            403: 'Доступ запрещен'
+        }
+    )
     def delete(self, request, pk, format=None):
         try:
             collection = Collection.objects.get(pk=pk)
@@ -161,16 +370,48 @@ class CollectionView(APIView):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+    @swagger_auto_schema(
+        operation_description="Возвращает коллекцию по её id",
+        operation_summary="Коллекция",
+        tags=['Collections'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id коллекции',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        request_body=openapi.Schema(
+            'series',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'series_id': openapi.Schema(
+                    description='id серии',
+                    in_=openapi.IN_BODY,
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_INTEGER))
+            },
+        ),
+        responses={
+            200: 'Серия добавлена',
+            404: 'Коллекция не найдена',
+            403: 'Доступ запрещен'
+        }
+    )
     def patch(self, request, pk, format=None):
         try:
             collection = Collection.objects.get(pk=pk)
         except Exception as e:
             raise Http404
+        print(request.data)
         if request.user == collection.owner or request.user.is_staff:
-            series_ids = request.data.getlist("series_id")
+            series_ids = request.data.get("series_id")
+            print(series_ids)
             if series_ids:
-                for series_id in series_ids:
-                    collection.collections_series.add(series_id)
+            #     for series_id in series_ids:
+            #         collection.collections_series.add(series_id)
                 return Response(status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_404_NOT_FOUND)
@@ -180,7 +421,19 @@ class CollectionView(APIView):
 
 class CollectionCreateView(APIView):
     permission_classes = [IsAuthenticated, ]
+    parser_classes = (MultiPartParser, )
 
+    @swagger_auto_schema(
+        operation_description="Создает коллекцию",
+        operation_summary="Коллекция",
+        tags=['Collections'],
+        request_body=CollectionSerializer,
+        responses={
+            201: CollectionSerializer,
+            404: 'Коллекция не найдена',
+            403: 'Доступ запрещен'
+        }
+    )
     def post(self, request, format=None):
         serializer = CollectionSerializer(data=request.data, context={'request': request, })
         if serializer.is_valid():
@@ -190,9 +443,13 @@ class CollectionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-
 # Notification views
 class NotificationView(APIView):
+    @swagger_auto_schema(
+        operation_description="ABOBA",
+        operation_summary="ABOBA",
+        tags=['Aboba']
+    )
     def get(self, request, format=None):
         return HttpResponse("<h1>ABOBA</h1>")
 
@@ -205,6 +462,24 @@ class TagView(APIView):
         except Tag.DoesNotExist:
             raise Http404
 
+    @swagger_auto_schema(
+        operation_description="Возвращает тег по его id",
+        operation_summary="Тег",
+        tags=['Tags'],
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                description='id тега',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: TagSerializer,
+            404: 'Тег не найден'
+        }
+    )
     def get(self, request, pk, format=None):
         tag = self.get_object(pk)
         serializer = TagSerializer(tag)
@@ -212,14 +487,69 @@ class TagView(APIView):
 
 
 class TagListView(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает список тегов",
+        operation_summary="Тег",
+        tags=['Tags'],
+        manual_parameters=[
+            openapi.Parameter(
+                'limit',
+                description='Максимальное количество обэктов',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'offset',
+                description='Отступ с начала обэктов',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: TagSerializer,
+            404: 'Тег не найден'
+        }
+    )
     def get(self, request, format=None):
         tag = Tag.objects.all()
-        serializer = TagSerializer(tag, many=True)
+
+        paginator = LimitOffsetPagination()
+        paginator.default_limit = 5
+
+        result_page = paginator.paginate_queryset(tag, request)
+
+        serializer = TagSerializer(result_page, many=True)
         return Response(serializer.data)
 
 
 # User views
 class UserPhotoSeries(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает серии фото пользователя",
+        operation_summary="Фото пользователя",
+        tags=['User', "PhotoSeries"],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id юзера',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'page',
+                description='Номер страницы',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                'Фото пользователя',
+                schema=PhotoSeriesShortSerializer(many=True)
+            ),
+            404: 'Юзер не найден'
+        }
+    )
     def get(self, request, user_pk, format=None):
         try:
             user_photo_series = PhotoSeries.objects.filter(owner__id=user_pk).order_by('created_at')
@@ -240,6 +570,32 @@ class UserPhotoSeries(APIView):
 
 
 class UserCollections(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает коллекции пользователя",
+        operation_summary="Коллекции пользователя",
+        tags=['User', "Collections"],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id юзера',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'page',
+                description='Номер страницы',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                'Фото пользователя',
+                schema=PhotoSeriesShortSerializer(many=True)
+            ),
+            404: 'Юзер не найден'
+        }
+    )
     def get(self, request, user_pk, format=None):
         try:
             user_collections = Collection.objects.filter(owner__id=user_pk).order_by('created_at')
@@ -260,7 +616,25 @@ class UserCollections(APIView):
 
 class UserSubscribeView(APIView):
     permission_classes = [IsAuthenticated, ]
-
+    @swagger_auto_schema(
+        operation_description="Подписывает на пользователя по его id",
+        operation_summary="Субскрибшн",
+        tags=['User', 'Subscription'],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id пользователя',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: 'Подписан',
+            400: 'Плохой запрос',
+            403: 'Отказано в доступе',
+        }
+    )
     def post(self, request, user_pk, format=None):
         try:
             user_for_subscribe = User.objects.get(pk=user_pk)
@@ -272,6 +646,25 @@ class UserSubscribeView(APIView):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+    @swagger_auto_schema(
+        operation_description="Отписывает пользователя по его id",
+        operation_summary="Субскрибшн",
+        tags=['User', 'Subscription'],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id пользователя',
+                in_=openapi.IN_PATH,
+                required=True,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            204: 'Отписан',
+            400: 'Плохой запрос',
+            403: 'Отказано в доступе',
+        }
+    )
     def delete(self, request, user_pk, format=None):
         try:
             user_for_unsubscribe = User.objects.get(pk=user_pk)
@@ -285,6 +678,30 @@ class UserSubscribeView(APIView):
 
 
 class UserSubscribersView(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает количество подписок и количество подписчиков пользователя",
+        operation_summary="Подписки и подписчики пользователя",
+        tags=['User', "Subscription"],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id юзера',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: openapi.Schema(
+                'Информация о подписках',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "subscribers": openapi.Schema(type=openapi.TYPE_INTEGER),
+                    "subscribed_to": openapi.Schema(type=openapi.TYPE_INTEGER),
+                }
+            ),
+            404: 'Юзер не найден'
+        }
+    )
     def get(self, request, user_pk, format=None):
         try:
             user_subscribers = User.objects.get(pk=user_pk)
@@ -293,3 +710,31 @@ class UserSubscribersView(APIView):
         subscribers_count = user_subscribers.subscribers.count()
         subscribed_to_count = user_subscribers.subscribed_to.count()
         return JsonResponse({"subscribers": subscribers_count, "subscribed_to": subscribed_to_count})
+
+
+class UserShortInfo(APIView):
+    @swagger_auto_schema(
+        operation_description="Возвращает короткую информацию о пользователе",
+        operation_summary="Пользователь",
+        tags=['User', ],
+        manual_parameters=[
+            openapi.Parameter(
+                'user_pk',
+                description='id юзера',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_INTEGER,
+            ),
+        ],
+        responses={
+            200: UserShortSerializer,
+            404: 'Юзер не найден'
+        }
+    )
+    def get(self, request, user_pk, format=None):
+        try:
+            user = User.objects.get(pk=user_pk)
+        except Exception as e:
+            raise Http404
+        serializer = UserShortSerializer(user)
+        return Response(serializer.data)
+

@@ -27,6 +27,18 @@ class UserCreateSerializer(UserCreateSerializer):
         )
 
 
+class UserShortSerializer(serializers.ModelSerializer):
+    profile_pic = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile_pic',
+        )
+
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag

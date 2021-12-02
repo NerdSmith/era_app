@@ -243,3 +243,8 @@ DJOSER = {
         # 'user_list': ['rest_framework.permissions.AllowAny'],
     },
 }
+
+# documentation
+SWAGGER_SETTINGS = {
+    'DOC_EXPANSION': 'none',
+}
