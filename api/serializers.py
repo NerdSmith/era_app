@@ -132,7 +132,7 @@ class PhotoSeriesSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request', None)
-        series_photo = request.data.getlist("series_photos")
+        series_photo = request.data.getlist("series_photos[]")
 
         photo_series = PhotoSeries.objects.create(
             name=validated_data.get('name'),

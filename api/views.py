@@ -19,6 +19,8 @@ from .serializers import PhotoSeriesRetrieveSerializer, TagSerializer, PhotoSeri
     CollectionRetrieveSerializer, \
     PhotoSeriesSerializer, CollectionSerializer, UserShortSerializer
 
+import requests
+
 User = get_user_model()
 
 
@@ -206,7 +208,7 @@ class PhotoSeriesCreateView(APIView):
                         type=openapi.TYPE_INTEGER
                     )
                 ),
-                'series_photos': openapi.Schema(
+                'series_photos[]': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(
                         description='файл фото',
@@ -222,12 +224,15 @@ class PhotoSeriesCreateView(APIView):
     )
     def post(self, request, format=None):
         print(request.data)
-        serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.data.getlist("series_photos[]"):
+            serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhotoSeriesMainPageView(APIView):
@@ -511,7 +516,7 @@ class TagListView(APIView):
         }
     )
     def get(self, request, format=None):
-        tag = Tag.objects.all()
+        tag = Tag.objects.all().order_by('id')
 
         paginator = LimitOffsetPagination()
         paginator.default_limit = 5
@@ -738,3 +743,15 @@ class UserShortInfo(APIView):
         serializer = UserShortSerializer(user)
         return Response(serializer.data)
 
+
+class UserActivationView(APIView):
+    def get(self, request, uid, token):
+        protocol = 'https://' if request.is_secure() else 'http://'
+        print(protocol)
+        web_url = protocol + request.get_host()
+        post_url = web_url + "/api/auth/users/activation/"
+        print(post_url)
+        post_data = {'uid': uid, 'token': token}
+        result = requests.post(post_url, data=post_data)
+        content = result.text
+        return Response(content)

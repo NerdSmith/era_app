@@ -21,7 +21,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from api.views import MediaAccess
+from api.views import MediaAccess, UserActivationView
 from config import settings
 
 schema_view = get_schema_view(
@@ -48,6 +48,7 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     re_path(r'^media/(?P<path>.*)', MediaAccess.as_view(), name='media'),
+    re_path(r'^activate/(?P<uid>[\w-]+)/(?P<token>[\w-]+)$', UserActivationView.as_view()),
     re_path(r"^$", render_react),
     re_path(r"^(?:.*)/?$", render_react),
 ] # + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
