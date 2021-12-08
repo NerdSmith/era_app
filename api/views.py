@@ -257,6 +257,12 @@ class PhotoSeriesMainPageView(APIView):
                 items=openapi.Schema(
                     type=openapi.TYPE_INTEGER
                 )
+            ),
+            openapi.Parameter(
+                'search_query',
+                description='Поисковый запрос',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
             )
         ],
         responses={
@@ -267,22 +273,25 @@ class PhotoSeriesMainPageView(APIView):
             # 404: 'Серия фото не найдена'
         }
     )
-    def get(self, request, format=None): # add params for tag?
+    def get(self, request, format=None):
         series = PhotoSeries.objects.filter(Q(collection__is_secret=False) | Q(collection__isnull=True))
+
         if request.query_params:
-            print(request.query_params)
             tags = request.query_params.getlist("tag_id")
             if tags:
                 tags = tags[0].split(',')
                 for tag in tags:
                     series = series.filter(tag__id=int(tag))
 
+            search_query = request.query_params.getlist("search_query")
+            if search_query:
+                for search in search_query:
+                    series = series.filter(name__icontains=search)
+
         series = list(series)
         paginator = PageNumberPagination()
-        # paginator.default_limit = 10
         paginator.page_size = 10
 
-        # random_items = sample(series, min(paginator.page_size, len(series)))
         shuffle(series)
         result_page = paginator.paginate_queryset(series, request)
         serializer = PhotoSeriesShortSerializer(result_page, many=True)
