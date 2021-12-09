@@ -192,16 +192,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     subscribers = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='subscribed_to')
 
     def get_image_path(self, filename):
+        print("filename", filename)
         path = f'pictures/avatars/{transliterate_filename(filename)}'
         return path
 
     profile_pic = models.ImageField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         upload_to=get_image_path,
         validators=[
             FileExtensionValidator(['png', 'jpg', 'gif'])
         ],
+        default='site/default.jpg',
     )
     check_mark = models.BooleanField(_('check mark'), default=False, blank=False, null=False)
     description = models.TextField(max_length=150, blank=True, null=False)
