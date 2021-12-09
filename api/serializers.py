@@ -1,9 +1,34 @@
-from djoser.serializers import UserCreateSerializer
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework.fields import SerializerMethodField
 from rest_framework.relations import PrimaryKeyRelatedField
 
 from .models import User, SinglePhoto, PhotoSeries, Tag, Collection
 from rest_framework import serializers
+
+
+class UserSerializer(UserSerializer):
+    profile_pic = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = (
+            'id',
+            'username',
+            'email',
+            'profile_pic',
+            'first_name',
+            'last_name',
+            'description',
+            'location',
+            'instagram_url',
+            'vk_url',
+            'sex',
+        )
+        read_only_fields = (
+            'id',
+            'username',
+            'email',
+        )
 
 
 class UserCreateSerializer(UserCreateSerializer):
