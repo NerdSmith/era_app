@@ -2,6 +2,8 @@ from random import sample, shuffle, choice, randint
 
 from django.http import HttpResponse, Http404, JsonResponse
 from django.contrib.auth import get_user_model
+from django.shortcuts import render
+from django.views import View
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -764,3 +766,27 @@ class UserActivationView(APIView):
         result = requests.post(post_url, data=post_data)
         content = result.text
         return Response(content)
+
+#
+# class UserPasswordResetView(View):
+#
+#     def get(self, request, uid, token):
+#         print('render', uid, token)
+#         return render(request, 'reset_password.html')
+#
+#     def post(self, request, uid, token):
+#         password = request.POST.get('password1')
+#         payload = {'uid': uid, 'token': token, 'new_password': password}
+#
+#         url = '{0}://{1}{2}'.format(
+#             django_settings.PROTOCOL, django_settings.DOMAIN, reverse('password_reset_confirm'))
+#
+#         response = requests.post(url, data=payload)
+#         if response.status_code == 204:
+#             # Give some feedback to the user. For instance:
+#             # https://docs.djangoproject.com/en/2.2/ref/contrib/messages/
+#             messages.success(request, 'Your password has been reset successfully!')
+#             return redirect('home')
+#         else:
+#             return Response(response.json())
+#
