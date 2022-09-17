@@ -225,16 +225,20 @@ class PhotoSeriesCreateView(APIView):
         }
     )
     def post(self, request, format=None):
-        print(request.data)
+        print("post req: ", request.data)
         if request.data.getlist("series_photos[]"):
             serializer = PhotoSeriesSerializer(data=request.data, context={'request': request, })
             if serializer.is_valid():
                 serializer.save()
+                # return Response(status=status.HTTP_201_CREATED)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
+                # return Response(status=status.HTTP_200_OK)
                 return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
         else:
+            # return Response(status=status.HTTP_200_OK)
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        # return Response(status=status.HTTP_200_OK)
 
 
 class PhotoSeriesMainPageView(APIView):

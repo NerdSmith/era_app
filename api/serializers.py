@@ -156,8 +156,11 @@ class PhotoSeriesSerializer(serializers.ModelSerializer):
     # tag = serializers.ListField(child=serializers.CharField())
 
     def create(self, validated_data):
+        print("start")
         request = self.context.get('request', None)
+        print(request)
         series_photo = request.data.getlist("series_photos[]")
+        print(series_photo)
 
         photo_series = PhotoSeries.objects.create(
             name=validated_data.get('name'),
