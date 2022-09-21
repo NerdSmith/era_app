@@ -207,7 +207,7 @@ class PhotoSeriesCreateView(APIView):
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(
                         description='id тега',
-                        type=openapi.TYPE_INTEGER
+                        type=openapi.TYPE_STRING
                     )
                 ),
                 'series_photos[]': openapi.Schema(
@@ -234,7 +234,7 @@ class PhotoSeriesCreateView(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 # return Response(status=status.HTTP_200_OK)
-                return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             # return Response(status=status.HTTP_200_OK)
             return Response(status=status.HTTP_400_BAD_REQUEST)

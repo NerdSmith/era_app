@@ -153,24 +153,44 @@ class CollectionSerializer(serializers.ModelSerializer):
 class PhotoSeriesSerializer(serializers.ModelSerializer):
     # series_photo = serializers.ListSerializer(child=serializers.ImageField())
     # tag = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    # tag = serializers.ListField(child=serializers.CharField())
+    tag = serializers.ListField(child=serializers.CharField(), write_only=True)
 
     def create(self, validated_data):
         print("start")
         request = self.context.get('request', None)
         print(request)
         series_photo = request.data.getlist("series_photos[]")
-        print(series_photo)
+
+        desc = "" if validated_data.get('description') == ["default"] \
+            else validated_data.get('description')
 
         photo_series = PhotoSeries.objects.create(
             name=validated_data.get('name'),
-            description=validated_data.get('description'),
+            description=desc,
             owner=request.user,
             price=validated_data.get('price'),
         )
 
-        for tag_pk in validated_data.get('tag'):
-            photo_series.tag.add(tag_pk)
+        # request.user.is_staff
+
+        try:
+            tags = validated_data.get('tag')[0].split(",")
+            for i in range(len(tags)):
+                tags[i] = tags[i].strip()
+        except Exception as e:
+            tags = []
+
+        for tag_name in tags:
+            tag_search = Tag.objects.filter(tag=tag_name)
+            if len(tag_search) > 0:
+                photo_series.tag.add(tag_search[0].id)
+            elif request.user.is_staff:
+                new_tag = Tag.objects.create(tag=tag_name)
+                photo_series.tag.add(new_tag)
+
+
+        # for tag_pk in validated_data.get('tag'):
+        #     photo_series.tag.add(tag_pk)
 
         for i in range(len(series_photo)):
             SinglePhoto.objects.create(series=photo_series, order=i, photo=series_photo[i], owner=request.user)
