@@ -32,7 +32,7 @@ DEBUG = int(os.environ.get("DEBUG", default=1))
 ALLOWED_HOSTS = ['*']
 
 CORS_ALLOW_ALL_ORIGINS = True
-CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False
 
 
 # Application definition
