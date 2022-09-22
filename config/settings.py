@@ -29,8 +29,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", default="foaskjdbfkjabdslkjhfblkajdsbf
 DEBUG = int(os.environ.get("DEBUG", default=1))
 
 # ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost 127.0.0.1 [::1]").split(" ")
-
+ALLOWED_HOSTS = ['*']
 
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_COOKIE_SECURE = True
