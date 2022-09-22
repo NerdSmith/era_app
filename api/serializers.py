@@ -161,8 +161,11 @@ class PhotoSeriesSerializer(serializers.ModelSerializer):
         print(request)
         series_photo = request.data.getlist("series_photos[]")
 
-        desc = "" if validated_data.get('description') == ["default"] \
+        desc = "" if validated_data.get('description') == "default" \
             else validated_data.get('description')
+        print(validated_data.get('description'))
+        print(desc)
+
 
         photo_series = PhotoSeries.objects.create(
             name=validated_data.get('name'),
