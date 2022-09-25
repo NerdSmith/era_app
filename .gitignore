@@ -213,3 +213,4 @@ fabric.properties
 staticfiles/*
 ./.idea
 .idea
+/api/migrations/
