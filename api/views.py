@@ -169,6 +169,7 @@ class PhotoSeriesView(APIView):
     def delete(self, request, pk, format=None):
         try:
             series = PhotoSeries.objects.get(pk=pk)
+            print(series)
         except Exception as e:
             raise Http404
         if request.user == series.owner or request.user.is_staff:
