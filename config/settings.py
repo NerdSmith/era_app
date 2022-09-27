@@ -38,7 +38,6 @@ CORS_ALLOW_CREDENTIALS = False
 
 CSRF_COOKIE_SECURE = False
 
-
 # Application definition
 
 INSTALLED_APPS = [
