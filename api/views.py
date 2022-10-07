@@ -582,7 +582,7 @@ class UserPhotoSeries(APIView):
             user_photo_series = user_photo_series.filter(Q(collection__is_secret=False) | Q(collection__isnull=True))
 
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = 9
 
         result_page = paginator.paginate_queryset(user_photo_series, request)
 
